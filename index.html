@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rotation & Travel Tracker</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -168,14 +170,22 @@
              referenceDate = new Date(y, m-1, d);
         }
 
-        // === LOGIC ===
+        // === ROTATION LOGIC (FIXED FOR DST) ===
         function getRotationStatus(date) {
             if (!referenceDate) return { status: "unknown", hours: 0 };
+            
+            // MATH.ROUND FIX: Handles 23h/25h Daylight Saving Days correctly
             const oneDay = 24 * 60 * 60 * 1000;
-            const diff = Math.floor((date.getTime() - referenceDate.getTime()) / oneDay);
+            // Force dates to noon to avoid midnight boundary issues
+            const d1 = new Date(date); d1.setHours(12,0,0,0);
+            const d2 = new Date(referenceDate); d2.setHours(12,0,0,0);
+            
+            const diff = Math.round((d1.getTime() - d2.getTime()) / oneDay);
             const cycleLength = 77;
+            
             let effectiveIndex = diff;
             if (storedPhase === 35) effectiveIndex = diff + 35;
+            
             const index = ((effectiveIndex % cycleLength) + cycleLength) % cycleLength;
 
             if (index >= 0 && index <= 14) return { status: "on", hours: (index === 0) ? 5 : (index === 14 ? 7 : 12), isStart: index === 0, isEnd: index === 14 };
@@ -183,6 +193,7 @@
             return { status: "off", hours: 0 };
         }
 
+        // === RENDER ===
         function renderCalendar() {
             updateHero();
             const grid = document.getElementById("calendar");
@@ -220,7 +231,6 @@
                 let html = `<span class="text-xs font-bold">${d}</span>`;
                 html += `<div class="flex flex-col gap-1 items-end">`;
                 if (status === "on" && (isStart || isEnd) && info?.shiftType !== "Travel") html += `<span class="text-[9px] bg-orange-500/20 text-orange-400 px-1 rounded font-bold">${hours}h</span>`;
-                
                 html += `<div class="flex gap-1 h-1.5">`;
                 if(info?.wellName) html += `<div class="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.8)]"></div>`;
                 if(info?.shiftType === "Travel") html += `<span class="text-[8px]">✈️</span>`;
@@ -231,6 +241,7 @@
             }
         }
 
+        // === HERO ===
         function updateHero() {
             if (!referenceDate) {
                 document.getElementById("heroStatus").innerText = "Setup Required";
@@ -261,7 +272,7 @@
             }
         }
 
-        // === MODALS ===
+        // === MODALS & BACKUP ===
         function openSettings() {
             document.getElementById("modalSettings").classList.remove("hidden");
             if(storedDate) document.getElementById("settingsDate").value = storedDate;
@@ -283,7 +294,6 @@
                 renderCalendar();
             }
         }
-
         function openDayModal(date, dateStr, status) {
             document.getElementById("modalDay").classList.remove("hidden");
             document.getElementById("modalDateTitle").innerText = date.toDateString();
@@ -310,22 +320,14 @@
             closeDayModal();
             renderCalendar();
         }
-
-        // === BACKUP / RESTORE ===
         function downloadBackup() {
-            const data = {
-                plannerData: savedData,
-                settings: { startDate: storedDate, phase: storedPhase }
-            };
+            const data = { plannerData: savedData, settings: { startDate: storedDate, phase: storedPhase } };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
-            a.href = url;
-            a.download = `rotation-backup-${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
+            a.href = url; a.download = `rotation-backup-${new Date().toISOString().split('T')[0]}.json`; a.click();
             URL.revokeObjectURL(url);
         }
-
         function restoreBackup(input) {
             const file = input.files[0];
             if (!file) return;
@@ -333,28 +335,19 @@
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (data.plannerData) {
-                        savedData = data.plannerData;
-                        localStorage.setItem("plannerData", JSON.stringify(savedData));
-                    }
+                    if (data.plannerData) { savedData = data.plannerData; localStorage.setItem("plannerData", JSON.stringify(savedData)); }
                     if (data.settings) {
                         localStorage.setItem("rotationStartDate", data.settings.startDate);
                         localStorage.setItem("rotationPhase", data.settings.phase);
-                        storedDate = data.settings.startDate;
-                        storedPhase = parseInt(data.settings.phase);
+                        storedDate = data.settings.startDate; storedPhase = parseInt(data.settings.phase);
                         const [y, m, d] = storedDate.split('-').map(Number);
                         referenceDate = new Date(y, m-1, d);
                     }
-                    alert("Backup restored successfully!");
-                    closeSettings();
-                    renderCalendar();
-                } catch (err) {
-                    alert("Error reading file: " + err.message);
-                }
+                    alert("Data restored!"); closeSettings(); renderCalendar();
+                } catch (err) { alert("Error: " + err.message); }
             };
             reader.readAsText(file);
         }
-
         function changeMonth(n) { viewDate.setMonth(viewDate.getMonth() + n); renderCalendar(); }
         function resetToday() { viewDate = new Date(); renderCalendar(); }
 
