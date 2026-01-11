@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotation & Travel Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                fontFamily: { sans: ['Inter', 'sans-serif'] },
+                extend: {
+                    colors: {
+                        background: "#0b1121", 
+                        surface: "#151e32",
+                        primary: "#f97316",
+                        onDuty: "#112d31",
+                        onDutyText: "#22d3ee",
+                        travel: "#312e81",
+                        travelText: "#c7d2fe",
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0b1121; color: #e2e8f0; }
+        .glow-text { text-shadow: 0 0 20px rgba(249, 115, 22, 0.3); }
+        .glow-box { box-shadow: 0 0 40px -10px rgba(249, 115, 22, 0.15); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-6">
+
+    <div class="w-full max-w-2xl mb-8">
+        <div class="bg-surface border border-slate-800 rounded-3xl p-8 text-center glow-box relative overflow-hidden group">
+            
+            <button onclick="openSettings()" class="absolute top-4 right-4 p-2 bg-slate-800/50 hover:bg-orange-600 text-white rounded-full transition-all z-20 shadow-lg border border-white/10" title="Settings & Backup">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-orange-500/10 blur-[50px] rounded-full pointer-events-none"></div>
+            
+            <div class="relative z-10">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 mb-4 text-orange-500">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                </div>
+                <h3 class="text-slate-400 text-sm font-medium tracking-widest uppercase mb-1">Current Status</h3>
+                <h1 id="heroStatus" class="text-4xl md:text-5xl font-bold text-white mb-2">Loading...</h1>
+                <p id="heroSubtext" class="text-slate-400">...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full max-w-2xl">
+        <div class="flex items-center justify-between mb-6 px-2">
+            <h2 id="monthTitle" class="text-2xl font-bold text-white">Month Year</h2>
+            <div class="flex items-center gap-2">
+                <button onclick="changeMonth(-1)" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></button>
+                <button onclick="resetToday()" class="px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 rounded-lg">Today</button>
+                <button onclick="changeMonth(1)" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-7 mb-4 px-2">
+            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sun</div>
+            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">Mon</div>
+            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tue</div>
+            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">Wed</div>
+            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">Thu</div>
+            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">Fri</div>
+            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sat</div>
+        </div>
+
+        <div id="calendar" class="grid grid-cols-7 gap-3"></div>
+    </div>
+
+    <div id="modalSettings" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeSettings()"></div>
+        <div class="relative w-full max-w-md bg-surface border border-slate-800 rounded-2xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white">Settings</h3>
+                <button onclick="closeSettings()" class="text-slate-500 hover:text-white">✕</button>
+            </div>
+            
+            <form onsubmit="saveSettings(event)" class="space-y-6">
+                <div class="space-y-4">
+                    <h4 class="text-xs font-bold text-orange-500 uppercase tracking-widest">Rotation Config</h4>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-2">Start Date (First Wednesday)</label>
+                        <input type="date" id="settingsDate" required class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-orange-500 color-scheme-dark">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-2">Cycle Phase</label>
+                        <select id="settingsPhase" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-orange-500">
+                            <option value="0">2 Weeks ON -> 3 Weeks OFF</option>
+                            <option value="35">2 Weeks ON -> 4 Weeks OFF</option>
+                        </select>
+                    </div>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <div class="space-y-4">
+                    <h4 class="text-xs font-bold text-blue-400 uppercase tracking-widest">Data Backup</h4>
+                    <p class="text-xs text-slate-500">Save your data to a file so you don't lose it.</p>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" onclick="downloadBackup()" class="flex items-center justify-center gap-2 p-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 transition-colors">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download
+                        </button>
+                        
+                        <label class="flex items-center justify-center gap-2 p-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 transition-colors cursor-pointer">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Restore
+                            <input type="file" id="restoreFile" accept=".json" class="hidden" onchange="restoreBackup(this)">
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-xl">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalDay" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeDayModal()"></div>
+        <div class="relative w-full max-w-sm bg-surface border border-slate-800 rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modalDateTitle" class="text-xl font-bold text-white">Edit Date</h3>
+                <button onclick="closeDayModal()" class="text-slate-500 hover:text-white">✕</button>
+            </div>
+            <form onsubmit="saveDayData(event)" class="space-y-4">
+                <input type="hidden" id="inputDateStr">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Well Name</label>
+                    <input id="inputWell" placeholder="e.g. Well-102" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Status / Shift</label>
+                    <select id="inputShift" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-orange-500">
+                        <option value="Day">☀️ Day Shift</option>
+                        <option value="Night">🌙 Night Shift</option>
+                        <option value="Off">🏠 Off Duty (Home)</option>
+                        <option value="Travel">✈️ Travel / Trip</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Notes</label>
+                    <textarea id="inputNotes" placeholder="Details..." class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white h-24 resize-none outline-none focus:border-orange-500"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">Save Details</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // === STATE ===
+        let viewDate = new Date();
+        let savedData = JSON.parse(localStorage.getItem("plannerData") || "[]");
+        let storedDate = localStorage.getItem("rotationStartDate");
+        let storedPhase = parseInt(localStorage.getItem("rotationPhase") || "0");
+        let referenceDate = null;
+        if(storedDate) {
+             const [y, m, d] = storedDate.split('-').map(Number);
+             referenceDate = new Date(y, m-1, d);
+        }
+
+        // === LOGIC ===
+        function getRotationStatus(date) {
+            if (!referenceDate) return { status: "unknown", hours: 0 };
+            const oneDay = 24 * 60 * 60 * 1000;
+            const diff = Math.floor((date.getTime() - referenceDate.getTime()) / oneDay);
+            const cycleLength = 77;
+            let effectiveIndex = diff;
+            if (storedPhase === 35) effectiveIndex = diff + 35;
+            const index = ((effectiveIndex % cycleLength) + cycleLength) % cycleLength;
+
+            if (index >= 0 && index <= 14) return { status: "on", hours: (index === 0) ? 5 : (index === 14 ? 7 : 12), isStart: index === 0, isEnd: index === 14 };
+            else if (index >= 35 && index <= 49) return { status: "on", hours: (index === 35) ? 5 : (index === 49 ? 7 : 12), isStart: index === 35, isEnd: index === 49 };
+            return { status: "off", hours: 0 };
+        }
+
+        function renderCalendar() {
+            updateHero();
+            const grid = document.getElementById("calendar");
+            const title = document.getElementById("monthTitle");
+            grid.innerHTML = "";
+            title.textContent = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            const year = viewDate.getFullYear();
+            const month = viewDate.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+
+            for(let i=0; i<firstDay.getDay(); i++) grid.appendChild(document.createElement("div"));
+
+            for(let d=1; d<=lastDay.getDate(); d++) {
+                const date = new Date(year, month, d);
+                const offset = date.getTimezoneOffset();
+                const localDate = new Date(date.getTime() - (offset*60*1000));
+                const dateStr = localDate.toISOString().split('T')[0];
+                const { status, hours, isStart, isEnd } = getRotationStatus(date);
+                const info = savedData.find(x => x.date === dateStr);
+                const isToday = new Date().toDateString() === date.toDateString();
+
+                const el = document.createElement("div");
+                el.onclick = () => openDayModal(date, dateStr, status);
+                let baseClass = "aspect-square rounded-xl p-2 flex flex-col justify-between transition-all cursor-pointer border border-transparent ";
+                
+                if (info?.shiftType === "Travel") baseClass += "bg-travel text-travelText border-indigo-900 hover:bg-indigo-900 ";
+                else if (status === "on") baseClass += "bg-onDuty hover:bg-[#16383d] text-onDutyText border-[#1a4a4f] ";
+                else if (status === "off") baseClass += "bg-surface hover:bg-slate-800 text-slate-500 hover:text-slate-300 ";
+                else baseClass += "bg-slate-900 text-slate-600 ";
+                
+                if (isToday) baseClass += "ring-2 ring-orange-500 z-10 ";
+                el.className = baseClass;
+
+                let html = `<span class="text-xs font-bold">${d}</span>`;
+                html += `<div class="flex flex-col gap-1 items-end">`;
+                if (status === "on" && (isStart || isEnd) && info?.shiftType !== "Travel") html += `<span class="text-[9px] bg-orange-500/20 text-orange-400 px-1 rounded font-bold">${hours}h</span>`;
+                
+                html += `<div class="flex gap-1 h-1.5">`;
+                if(info?.wellName) html += `<div class="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.8)]"></div>`;
+                if(info?.shiftType === "Travel") html += `<span class="text-[8px]">✈️</span>`;
+                else if(info?.shiftType === "Night") html += `<div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>`;
+                html += `</div></div>`;
+                el.innerHTML = html;
+                grid.appendChild(el);
+            }
+        }
+
+        function updateHero() {
+            if (!referenceDate) {
+                document.getElementById("heroStatus").innerText = "Setup Required";
+                document.getElementById("heroStatus").className = "text-3xl font-bold text-slate-500";
+                return;
+            }
+            const today = new Date();
+            const { status } = getRotationStatus(today);
+            const title = document.getElementById("heroStatus");
+            const sub = document.getElementById("heroSubtext");
+            const offset = today.getTimezoneOffset();
+            const localDate = new Date(today.getTime() - (offset*60*1000));
+            const dateStr = localDate.toISOString().split('T')[0];
+            const info = savedData.find(x => x.date === dateStr);
+
+            if (info?.shiftType === "Travel") {
+                title.innerText = "Traveling";
+                title.className = "text-4xl md:text-5xl font-bold text-indigo-400 glow-text mb-2";
+                sub.innerText = "Enjoy your trip! ✈️";
+            } else if (status === "on") {
+                title.innerText = "On Duty";
+                title.className = "text-4xl md:text-5xl font-bold text-orange-500 glow-text mb-2";
+                sub.innerText = info?.wellName ? `Working on: ${info.wellName}` : "Stay safe on the rig";
+            } else {
+                title.innerText = "Off Duty";
+                title.className = "text-4xl md:text-5xl font-bold text-slate-300 mb-2";
+                sub.innerText = "Relaxing at home";
+            }
+        }
+
+        // === MODALS ===
+        function openSettings() {
+            document.getElementById("modalSettings").classList.remove("hidden");
+            if(storedDate) document.getElementById("settingsDate").value = storedDate;
+            if(storedPhase) document.getElementById("settingsPhase").value = storedPhase;
+        }
+        function closeSettings() { document.getElementById("modalSettings").classList.add("hidden"); }
+        function saveSettings(e) {
+            e.preventDefault();
+            const d = document.getElementById("settingsDate").value;
+            const p = document.getElementById("settingsPhase").value;
+            if(d) {
+                localStorage.setItem("rotationStartDate", d);
+                localStorage.setItem("rotationPhase", p);
+                storedDate = d;
+                storedPhase = parseInt(p);
+                const [y, m, day] = d.split('-').map(Number);
+                referenceDate = new Date(y, m-1, day);
+                closeSettings();
+                renderCalendar();
+            }
+        }
+
+        function openDayModal(date, dateStr, status) {
+            document.getElementById("modalDay").classList.remove("hidden");
+            document.getElementById("modalDateTitle").innerText = date.toDateString();
+            document.getElementById("inputDateStr").value = dateStr;
+            const data = savedData.find(x => x.date === dateStr);
+            document.getElementById("inputWell").value = data?.wellName || "";
+            document.getElementById("inputNotes").value = data?.notes || "";
+            if (data?.shiftType) document.getElementById("inputShift").value = data.shiftType;
+            else document.getElementById("inputShift").value = (status === "on") ? "Day" : "Off";
+        }
+        function closeDayModal() { document.getElementById("modalDay").classList.add("hidden"); }
+        function saveDayData(e) {
+            e.preventDefault();
+            const dateStr = document.getElementById("inputDateStr").value;
+            const newData = {
+                date: dateStr,
+                wellName: document.getElementById("inputWell").value,
+                shiftType: document.getElementById("inputShift").value,
+                notes: document.getElementById("inputNotes").value
+            };
+            savedData = savedData.filter(d => d.date !== dateStr);
+            savedData.push(newData);
+            localStorage.setItem("plannerData", JSON.stringify(savedData));
+            closeDayModal();
+            renderCalendar();
+        }
+
+        // === BACKUP / RESTORE ===
+        function downloadBackup() {
+            const data = {
+                plannerData: savedData,
+                settings: { startDate: storedDate, phase: storedPhase }
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `rotation-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function restoreBackup(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.plannerData) {
+                        savedData = data.plannerData;
+                        localStorage.setItem("plannerData", JSON.stringify(savedData));
+                    }
+                    if (data.settings) {
+                        localStorage.setItem("rotationStartDate", data.settings.startDate);
+                        localStorage.setItem("rotationPhase", data.settings.phase);
+                        storedDate = data.settings.startDate;
+                        storedPhase = parseInt(data.settings.phase);
+                        const [y, m, d] = storedDate.split('-').map(Number);
+                        referenceDate = new Date(y, m-1, d);
+                    }
+                    alert("Backup restored successfully!");
+                    closeSettings();
+                    renderCalendar();
+                } catch (err) {
+                    alert("Error reading file: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function changeMonth(n) { viewDate.setMonth(viewDate.getMonth() + n); renderCalendar(); }
+        function resetToday() { viewDate = new Date(); renderCalendar(); }
+
+        renderCalendar();
+    </script>
+</body>
+</html>
